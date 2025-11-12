@@ -2,7 +2,6 @@ import { v4 as uuidv4 } from "uuid";
 import SchedulerService from "./starter-code/schedulerService";
 import { Patient } from "./starter-code/patient";
 import { Clinician } from "./starter-code/clinician";
-import { AvailableAppointmentSlot } from "./starter-code/appointment";
 
 // Patient data
 const patient: Patient = {

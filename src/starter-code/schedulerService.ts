@@ -1,12 +1,10 @@
 import {
   ASSESSMENT_LENGTH,
   AvailableAppointmentSlot,
-  getMaximumSlots,
   THERAPY_LENGTH,
 } from "./appointment";
 import {
   Clinician,
-  ClinicianType,
   filterAvailableClinicians,
   getAvailableSlots,
 } from "./clinician";
