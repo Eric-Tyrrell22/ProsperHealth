@@ -2,7 +2,7 @@ import SchedulerService from "../schedulerService";
 import { Clinician, ClinicianType } from "../clinician";
 import { Patient } from "../patient";
 import { AvailableAppointmentSlot } from "../appointment";
-import { addDays } from "date-fns";
+import { addDays, addHours, startOfWeek } from "date-fns";
 
 // This is AI generated, but I did read through them all, and it helped me catch a few bugs
 describe("SchedulerService", () => {
@@ -11,11 +11,12 @@ describe("SchedulerService", () => {
   const createMockSlot = (
     id: string,
     clinicianId: string,
-    daysOffset: number
+    daysOffset: number,
+    hoursOffset: number = 0
   ): AvailableAppointmentSlot => ({
     id,
     clinicianId,
-    date: addDays(baseDate, daysOffset),
+    date: addHours(addDays(baseDate, daysOffset), hoursOffset),
     length: 60,
     createdAt: baseDate,
     updatedAt: baseDate,
@@ -188,6 +189,159 @@ describe("SchedulerService", () => {
     });
   });
 
+  describe("getAssessmentAvailability - respecting clinician limits", () => {
+    it("should respect daily max appointment limit when returning assessment slots", () => {
+      // Create a psychologist with maxDailyAppointments = 2
+      // Give them 3 slots on day 0, and followup slots on day 3
+      const slots = [
+        createMockSlot("slot-1", "psychologist-1", 0, 0), // Day 0, 10:00
+        createMockSlot("slot-2", "psychologist-1", 0, 2), // Day 0, 12:00
+        createMockSlot("slot-3", "psychologist-1", 0, 4), // Day 0, 14:00
+        createMockSlot("slot-4", "psychologist-1", 3, 0), // Day 3 (followup)
+      ];
+
+      const psychologist = {
+        id: "psychologist-1",
+        firstName: "Test",
+        lastName: "Psychologist",
+        states: ["CA"] as any,
+        insurances: ["AETNA"] as any,
+        clinicianType: "PSYCHOLOGIST" as ClinicianType,
+        appointments: [
+          // Already has 2 appointments on day 0 - hitting the daily limit
+          {
+            id: "appt-1",
+            clinicianId: "psychologist-1",
+            patientId: "patient-x",
+            scheduledFor: addDays(baseDate, 0), // Day 0
+            appointmentType: "ASSESSMENT_SESSION_1" as const,
+            status: "UPCOMING" as const,
+            createdAt: baseDate,
+            updatedAt: baseDate,
+          },
+          {
+            id: "appt-2",
+            clinicianId: "psychologist-1",
+            patientId: "patient-y",
+            scheduledFor: addHours(addDays(baseDate, 0), 1), // Day 0, 1 hour later
+            appointmentType: "ASSESSMENT_SESSION_1" as const,
+            status: "UPCOMING" as const,
+            createdAt: baseDate,
+            updatedAt: baseDate,
+          },
+        ],
+        availableSlots: slots,
+        maxDailyAppointments: 2,
+        maxWeeklyAppointments: 40,
+        createdAt: baseDate,
+        updatedAt: baseDate,
+      };
+
+      const scheduler = new SchedulerService([psychologist]);
+      const patient = createMockPatient("CA", "AETNA");
+      const availability = scheduler.getAssessmentAvailability(patient);
+
+      // Should have no slots on day 0 because daily limit (2) is already reached
+      expect(availability["psychologist-1"]).toHaveLength(0);
+    });
+
+    it("should respect weekly max appointment limit when returning assessment slots", () => {
+      // Use startOfWeek to ensure all days are clearly in the same week
+      const weekStart = startOfWeek(baseDate);
+
+      // Create a psychologist with maxWeeklyAppointments = 3
+      // Give them slots across multiple days in the same week
+      const slots = [
+        {
+          id: "slot-1",
+          clinicianId: "psychologist-1",
+          date: addDays(weekStart, 0), // Monday (Week 1)
+          length: 60,
+          createdAt: baseDate,
+          updatedAt: baseDate,
+        },
+        {
+          id: "slot-2",
+          clinicianId: "psychologist-1",
+          date: addDays(weekStart, 2), // Wednesday (Week 1)
+          length: 60,
+          createdAt: baseDate,
+          updatedAt: baseDate,
+        },
+        {
+          id: "slot-3",
+          clinicianId: "psychologist-1",
+          date: addDays(weekStart, 4), // Friday (Week 1)
+          length: 60,
+          createdAt: baseDate,
+          updatedAt: baseDate,
+        },
+        {
+          id: "slot-4",
+          clinicianId: "psychologist-1",
+          date: addDays(weekStart, 6), // Sunday (Week 1, followup)
+          length: 60,
+          createdAt: baseDate,
+          updatedAt: baseDate,
+        },
+      ];
+
+      const psychologist = {
+        id: "psychologist-1",
+        firstName: "Test",
+        lastName: "Psychologist",
+        states: ["CA"] as any,
+        insurances: ["AETNA"] as any,
+        clinicianType: "PSYCHOLOGIST" as ClinicianType,
+        appointments: [
+          // Already has 3 appointments in week 1 - hitting the weekly limit
+          {
+            id: "appt-1",
+            clinicianId: "psychologist-1",
+            patientId: "patient-x",
+            scheduledFor: addDays(weekStart, 0), // Monday (Week 1)
+            appointmentType: "ASSESSMENT_SESSION_1" as const,
+            status: "UPCOMING" as const,
+            createdAt: baseDate,
+            updatedAt: baseDate,
+          },
+          {
+            id: "appt-2",
+            clinicianId: "psychologist-1",
+            patientId: "patient-y",
+            scheduledFor: addDays(weekStart, 1), // Tuesday (Week 1)
+            appointmentType: "ASSESSMENT_SESSION_1" as const,
+            status: "UPCOMING" as const,
+            createdAt: baseDate,
+            updatedAt: baseDate,
+          },
+          {
+            id: "appt-3",
+            clinicianId: "psychologist-1",
+            patientId: "patient-z",
+            scheduledFor: addDays(weekStart, 3), // Thursday (Week 1)
+            appointmentType: "ASSESSMENT_SESSION_1" as const,
+            status: "UPCOMING" as const,
+            createdAt: baseDate,
+            updatedAt: baseDate,
+          },
+        ],
+        availableSlots: slots,
+        maxDailyAppointments: 8,
+        maxWeeklyAppointments: 3,
+        createdAt: baseDate,
+        updatedAt: baseDate,
+      };
+
+      const scheduler = new SchedulerService([psychologist]);
+      const patient = createMockPatient("CA", "AETNA");
+      const availability = scheduler.getAssessmentAvailability(patient);
+
+      // Should have no slots because weekly limit (3) is already reached
+      expect(availability["psychologist-1"]).toHaveLength(0);
+    });
+  });
+
   describe("getAssessmentAvailability", () => {
     it("should return assessment availability with follow-ups for psychologists", () => {
       const slots = [
@@ -241,7 +395,9 @@ describe("SchedulerService", () => {
       const patient = createMockPatient("CA", "AETNA");
       const availability = scheduler.getAssessmentAvailability(patient);
 
-      const firstAssessment = availability["psychologist-1"].find(a => a.id === "slot-1");
+      const firstAssessment = availability["psychologist-1"].find(
+        (a) => a.id === "slot-1"
+      );
       expect(firstAssessment).toBeDefined();
 
       // Should only include slots within 7 days (slot-4 is 10 days out)
@@ -271,7 +427,9 @@ describe("SchedulerService", () => {
       const patient = createMockPatient("CA", "AETNA");
       const availability = scheduler.getAssessmentAvailability(patient);
 
-      const firstAssessment = availability["psychologist-1"].find(a => a.id === "slot-1");
+      const firstAssessment = availability["psychologist-1"].find(
+        (a) => a.id === "slot-1"
+      );
       expect(firstAssessment).toBeDefined();
 
       expect(firstAssessment!.followups).toHaveLength(1);
@@ -298,7 +456,9 @@ describe("SchedulerService", () => {
       const patient = createMockPatient("CA", "AETNA");
       const availability = scheduler.getAssessmentAvailability(patient);
 
-      const secondAssessment = availability["psychologist-1"].find(a => a.id === "slot-2");
+      const secondAssessment = availability["psychologist-1"].find(
+        (a) => a.id === "slot-2"
+      );
 
       expect(secondAssessment).toBe(undefined);
     });
@@ -392,6 +552,100 @@ describe("SchedulerService", () => {
       const p2Assessment = availability["psychologist-2"][0];
       expect(p2Assessment.followups).toHaveLength(1);
       expect(p2Assessment.followups[0].id).toBe("slot-4");
+    });
+  });
+
+  describe("cache behavior", () => {
+    it("should cache follow-ups for slots on the same day (cache set and hit)", () => {
+      // Create multiple slots on the same day, spaced 2 hours apart (> 90 min assessment length)
+      // This ensures getMaximumSlots doesn't filter them out
+      const slots = [
+        createMockSlot("slot-1", "psychologist-1", 0, 0), // Day 0, 10:00
+        createMockSlot("slot-2", "psychologist-1", 0, 2), // Day 0, 12:00 (same day, 2 hours later)
+        createMockSlot("slot-3", "psychologist-1", 3, 0), // Day 3 (followup for both day 0 slots)
+        createMockSlot("slot-4", "psychologist-1", 5, 0), // Day 5 (followup for both day 0 slots)
+      ];
+
+      const clinicians = [
+        createMockClinician(
+          "psychologist-1",
+          "PSYCHOLOGIST",
+          ["CA"],
+          ["AETNA"],
+          slots
+        ),
+      ];
+
+      const scheduler = new SchedulerService(clinicians);
+      const patient = createMockPatient("CA", "AETNA");
+      const availability = scheduler.getAssessmentAvailability(patient);
+
+      // Both slot-1 and slot-2 are on day 0 and should have the same followups
+      const slot1Assessment = availability["psychologist-1"].find(
+        (a) => a.id === "slot-1"
+      );
+      const slot2Assessment = availability["psychologist-1"].find(
+        (a) => a.id === "slot-2"
+      );
+
+      expect(slot1Assessment).toBeDefined();
+      expect(slot2Assessment).toBeDefined();
+
+      // Both should have the same followups (slot-3 and slot-4)
+      expect(slot1Assessment!.followups).toHaveLength(2);
+      expect(slot2Assessment!.followups).toHaveLength(2);
+
+      expect(slot1Assessment!.followups[0].id).toBe("slot-3");
+      expect(slot1Assessment!.followups[1].id).toBe("slot-4");
+
+      expect(slot2Assessment!.followups[0].id).toBe("slot-3");
+      expect(slot2Assessment!.followups[1].id).toBe("slot-4");
+    });
+
+    it("should use cache for multiple slots on the same day across different days", () => {
+      const slots = [
+        createMockSlot("slot-1", "psychologist-1", 0, 0), // Day 0, 10:00
+        createMockSlot("slot-2", "psychologist-1", 0, 2), // Day 0, 12:00 (cache hit)
+        createMockSlot("slot-3", "psychologist-1", 3, 0), // Day 3, 10:00
+        createMockSlot("slot-4", "psychologist-1", 3, 2), // Day 3, 12:00 (cache hit)
+        createMockSlot("slot-5", "psychologist-1", 6, 0), // Day 6, 10:00
+      ];
+
+      const clinicians = [
+        createMockClinician(
+          "psychologist-1",
+          "PSYCHOLOGIST",
+          ["CA"],
+          ["AETNA"],
+          slots
+        ),
+      ];
+
+      const scheduler = new SchedulerService(clinicians);
+      const patient = createMockPatient("CA", "AETNA");
+      const availability = scheduler.getAssessmentAvailability(patient);
+
+      // Verify slots on day 0 have the same followups
+      const slot1 = availability["psychologist-1"].find(
+        (a) => a.id === "slot-1"
+      );
+      const slot2 = availability["psychologist-1"].find(
+        (a) => a.id === "slot-2"
+      );
+
+      expect(slot1!.followups).toHaveLength(3); // slot-3, slot-4, slot-5
+      expect(slot2!.followups).toHaveLength(3); // same as slot-1 (cached)
+
+      // Verify slots on day 3 have the same followups
+      const slot3 = availability["psychologist-1"].find(
+        (a) => a.id === "slot-3"
+      );
+      const slot4 = availability["psychologist-1"].find(
+        (a) => a.id === "slot-4"
+      );
+
+      expect(slot3!.followups).toHaveLength(1); // slot-5
+      expect(slot4!.followups).toHaveLength(1); // same as slot-3 (cached)
     });
   });
 

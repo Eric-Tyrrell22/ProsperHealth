@@ -22,3 +22,11 @@ or deleted.
 I'm fairly certain the greedy approach here is optimal. 
 
 if appointment1 starts before appointment 2, and appointment 2 finishes before appointment3, then so does appointment 1. Therefore it always makes sense to pick the first availabile slot.
+
+# Task 3
+
+## Discussion
+
+Not too much to add. biggest issue I ran into was testing where the generated appointments weren't being generated offset from the start of the week, so they were in different weeks.
+
+If I were to spend more time, I'd want to move as much of the logic to SQL as possible, and also improve the tests with a better fake factory for all the types. 

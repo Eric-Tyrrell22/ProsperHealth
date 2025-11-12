@@ -8,6 +8,7 @@ import {
   Clinician,
   ClinicianType,
   filterAvailableClinicians,
+  getAvailableSlots,
 } from "./clinician";
 import { Patient } from "./patient";
 
@@ -37,10 +38,7 @@ export default class SchedulerService {
     const availability: TherapyAvailability = {};
 
     for (const clinician of clinicians) {
-      availability[clinician.id] = getMaximumSlots(
-        clinician.availableSlots,
-        THERAPY_LENGTH
-      );
+      availability[clinician.id] = getAvailableSlots(clinician, THERAPY_LENGTH);
     }
 
     return availability;
@@ -54,20 +52,22 @@ export default class SchedulerService {
     );
     const assessmentAvailability: AssessmentAvailability = {};
 
-    for (const { id, availableSlots } of clinicians) {
-      const maximizedSlots = getMaximumSlots(availableSlots, ASSESSMENT_LENGTH);
+    for (const clinician of clinicians) {
+      const maximizedSlots = getAvailableSlots(clinician, ASSESSMENT_LENGTH);
       const slotFollowups = this.getAssessmentFollowUps(maximizedSlots);
 
-      const initialAssessments: InitialAssessment[] = availableSlots.map(
+      const initialAssessments: InitialAssessment[] = maximizedSlots.map(
         (slot) => ({
           ...slot,
           followups: slotFollowups[slot.id] || [],
         })
       );
 
-      assessmentAvailability[id] = initialAssessments.filter((slot) => {
-        return slot.followups.length > 0;
-      });
+      assessmentAvailability[clinician.id] = initialAssessments.filter(
+        (slot) => {
+          return slot.followups.length > 0;
+        }
+      );
     }
 
     return assessmentAvailability;
