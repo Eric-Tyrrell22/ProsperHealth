@@ -1,3 +1,5 @@
+I'd start the review from the (SchedulerService)[https://github.com/Eric-Tyrrell22/ProsperHealth/blob/main/src/starter-code/schedulerService.ts]
+
 # Task 1
 
 ## Assumptions
@@ -14,6 +16,11 @@ I think there's a strong argument that the frontend should just make a request f
 This would avoid stale assessments a bit. Even better, you could have the calendar open a websocket (or SSE) and subscribe to a clinician's availability.
 Whether that's worth doing depends on how how many writes / updates you're dealing with, and how frequently a user selects a slot that was previously taken 
 or deleted.
+
+I'm unsure if `#getAssessmentFollowUps` required a cache since I didn't load test the function.
+It obviously makes the function more verbose and difficult to follow. If I took more time, I'd do a proper test to see at what point the no-cache solution falls over.
+
+The SQL version of this is probably a lot more elegant, depending on the schema used.
 
 # Task 2
 
