@@ -1,4 +1,4 @@
-I'd start the review from the (SchedulerService)[https://github.com/Eric-Tyrrell22/ProsperHealth/blob/main/src/starter-code/schedulerService.ts]
+I'd start the review from the [SchedulerService](https://github.com/Eric-Tyrrell22/ProsperHealth/blob/main/src/starter-code/schedulerService.ts)
 
 # Task 1
 
