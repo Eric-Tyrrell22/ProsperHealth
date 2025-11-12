@@ -1,3 +1,5 @@
+import { addMinutes } from "date-fns";
+
 export const AppointmentStatuses = [
   "UPCOMING",
   "OCCURRED",
@@ -37,4 +39,22 @@ export interface AvailableAppointmentSlot {
   length: number;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export function getMaximumSlots(
+  slots: AvailableAppointmentSlot[],
+  duration: number
+): AvailableAppointmentSlot[] {
+  const results: AvailableAppointmentSlot[] = [];
+
+  let prevSlotDate = new Date(0);
+
+  for (const slot of slots) {
+    if (slot.date >= addMinutes(prevSlotDate, duration)) {
+      results.push(slot);
+      prevSlotDate = slot.date;
+    }
+  }
+
+  return results;
 }
