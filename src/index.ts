@@ -98,17 +98,24 @@ console.log("\nClinician:", {
 });
 
 console.log("\n=== Assessment Availability ===");
-const assessmentAvailability = schedulerService.getAssessmentAvailability(patient);
+const assessmentAvailability =
+  schedulerService.getAssessmentAvailability(patient);
 
-for (const [clinicianId, initialAssessments] of Object.entries(assessmentAvailability)) {
+for (const [clinicianId, initialAssessments] of Object.entries(
+  assessmentAvailability
+)) {
   console.log(`\nClinician ID: ${clinicianId}`);
   console.log(`\nInitial Assessment Slots (${initialAssessments.length}):`);
 
   initialAssessments.forEach((assessment, index) => {
-    console.log(`  ${index + 1}. ${assessment.date.toISOString()} (${assessment.length} mins)`);
+    console.log(
+      `  ${index + 1}. ${assessment.date.toISOString()} (${assessment.length} mins)`
+    );
     console.log(`     Follow-ups (${assessment.followups.length}):`);
     assessment.followups.forEach((followUp, followUpIndex) => {
-      console.log(`       ${followUpIndex + 1}. ${followUp.date.toISOString()} (${followUp.length} mins)`);
+      console.log(
+        `       ${followUpIndex + 1}. ${followUp.date.toISOString()} (${followUp.length} mins)`
+      );
     });
   });
 }

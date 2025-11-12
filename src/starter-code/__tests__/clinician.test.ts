@@ -431,9 +431,7 @@ describe("clinician", () => {
       const day1 = addDays(baseDate, 0);
       const slots = [createMockSlot("slot-1", "clinician-1", 0)];
 
-      const appointments = [
-        createMockAppointment("appt-1", addHours(day1, 1)),
-      ];
+      const appointments = [createMockAppointment("appt-1", addHours(day1, 1))];
 
       const clinician = createMockClinician(
         "clinician-1",
