@@ -4,7 +4,11 @@ import {
   getMaximumSlots,
   THERAPY_LENGTH,
 } from "./appointment";
-import { Clinician, ClinicianType } from "./clinician";
+import {
+  Clinician,
+  ClinicianType,
+  filterAvailableClinicians,
+} from "./clinician";
 import { Patient } from "./patient";
 
 import { differenceInCalendarDays, format } from "date-fns";
@@ -25,7 +29,11 @@ export default class SchedulerService {
   constructor(private clinicians: Clinician[]) {}
 
   getTherapyAvailability(patient: Patient): TherapyAvailability {
-    const clinicians = this.filterAvailableClinicians(patient, "THERAPIST");
+    const clinicians = filterAvailableClinicians(
+      this.clinicians,
+      patient,
+      "THERAPIST"
+    );
     const availability: TherapyAvailability = {};
 
     for (const clinician of clinicians) {
@@ -39,7 +47,11 @@ export default class SchedulerService {
   }
 
   getAssessmentAvailability(patient: Patient): AssessmentAvailability {
-    const clinicians = this.filterAvailableClinicians(patient, "PSYCHOLOGIST");
+    const clinicians = filterAvailableClinicians(
+      this.clinicians,
+      patient,
+      "PSYCHOLOGIST"
+    );
     const assessmentAvailability: AssessmentAvailability = {};
 
     for (const { id, availableSlots } of clinicians) {
@@ -59,21 +71,6 @@ export default class SchedulerService {
     }
 
     return assessmentAvailability;
-  }
-
-  private filterAvailableClinicians(
-    patient: Patient,
-    clinicianType: ClinicianType
-  ): Clinician[] {
-    return this.clinicians.filter((clinician) => {
-      const { states, insurances } = clinician;
-
-      return (
-        states.includes(patient.state) &&
-        insurances.includes(patient.insurance) &&
-        clinician.clinicianType === clinicianType
-      );
-    });
   }
 
   private getAssessmentFollowUps(
