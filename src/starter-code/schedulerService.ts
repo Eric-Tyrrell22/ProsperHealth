@@ -1,8 +1,12 @@
-import { AvailableAppointmentSlot } from "./appointment";
+import {
+  ASSESSMENT_LENGTH,
+  AvailableAppointmentSlot,
+  THERAPY_LENGTH,
+} from "./appointment";
 import { Clinician, ClinicianType } from "./clinician";
 import { Patient } from "./patient";
 
-import { differenceInCalendarDays, format } from "date-fns";
+import { addMinutes, differenceInCalendarDays, format } from "date-fns";
 
 type InitialAssessment = AvailableAppointmentSlot & {
   followups: AvailableAppointmentSlot[];
@@ -24,7 +28,10 @@ export default class SchedulerService {
     const availability: TherapyAvailability = {};
 
     for (const clinician of clinicians) {
-      availability[clinician.id] = clinician.availableSlots;
+      availability[clinician.id] = this.getMaximumSlots(
+        clinician.availableSlots,
+        THERAPY_LENGTH
+      );
     }
 
     return availability;
@@ -35,7 +42,11 @@ export default class SchedulerService {
     const assessmentAvailability: AssessmentAvailability = {};
 
     for (const { id, availableSlots } of clinicians) {
-      const slotFollowups = this.getAssessmentFollowUps(availableSlots);
+      const maximizedSlots = this.getMaximumSlots(
+        availableSlots,
+        ASSESSMENT_LENGTH
+      );
+      const slotFollowups = this.getAssessmentFollowUps(maximizedSlots);
 
       const initialAssessments: InitialAssessment[] = availableSlots.map(
         (slot) => ({
@@ -103,5 +114,23 @@ export default class SchedulerService {
     }
 
     return slotFollowups;
+  }
+
+  getMaximumSlots(
+    slots: AvailableAppointmentSlot[],
+    duration: number
+  ): AvailableAppointmentSlot[] {
+    const results: AvailableAppointmentSlot[] = [];
+
+    let prevSlotDate = new Date(0);
+
+    for (const slot of slots) {
+      if (slot.date >= addMinutes(prevSlotDate, duration)) {
+        results.push(slot);
+        prevSlotDate = slot.date;
+      }
+    }
+
+    return results;
   }
 }

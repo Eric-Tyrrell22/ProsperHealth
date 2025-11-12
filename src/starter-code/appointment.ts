@@ -16,6 +16,9 @@ export const AppointmentTypes = [
 ] as const;
 export type AppointmentType = (typeof AppointmentTypes)[number];
 
+export const THERAPY_LENGTH = 60;
+export const ASSESSMENT_LENGTH = 90;
+
 export interface Appointment {
   id: string;
   patientId: string;
