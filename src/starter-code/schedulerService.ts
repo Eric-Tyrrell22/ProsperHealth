@@ -86,7 +86,10 @@ export default class SchedulerService {
       const startKey = format(slot.date, "yyyy-MM-dd");
 
       if (cache.has(startKey)) {
-        slotFollowups[slot.id] = cache.get(startKey)!;
+        const followups = cache.get(startKey);
+        if (followups!.length > 0) {
+          slotFollowups[slot.id] = followups!;
+        }
         continue;
       }
 
@@ -102,8 +105,9 @@ export default class SchedulerService {
 
       if (availableFollowUps.length > 0) {
         slotFollowups[slot.id] = availableFollowUps;
-        cache.set(startKey, availableFollowUps);
       }
+
+      cache.set(startKey, availableFollowUps);
     }
 
     return slotFollowups;
