@@ -21,6 +21,9 @@ export type AppointmentType = (typeof AppointmentTypes)[number];
 export const THERAPY_LENGTH = 60;
 export const ASSESSMENT_LENGTH = 90;
 
+export const MAX_FOLLOWUP_DAYS = 7;
+export const MIN_FOLLOWUP_DAYS = 1;
+
 export interface Appointment {
   id: string;
   patientId: string;

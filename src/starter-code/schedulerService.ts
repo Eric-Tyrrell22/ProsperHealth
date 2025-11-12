@@ -1,6 +1,8 @@
 import {
   ASSESSMENT_LENGTH,
   AvailableAppointmentSlot,
+  MAX_FOLLOWUP_DAYS,
+  MIN_FOLLOWUP_DAYS,
   THERAPY_LENGTH,
 } from "./appointment";
 import {
@@ -12,17 +14,18 @@ import { Patient } from "./patient";
 
 import { differenceInCalendarDays, format } from "date-fns";
 
+type SlotsById = Record<
+  AvailableAppointmentSlot["id"],
+  AvailableAppointmentSlot[]
+>;
+
 type InitialAssessment = AvailableAppointmentSlot & {
   followups: AvailableAppointmentSlot[];
 };
-
 type AssessmentAvailability = Record<Clinician["id"], InitialAssessment[]>;
 
 type TherapyIntakeSlots = AvailableAppointmentSlot[];
 type TherapyAvailability = Record<Clinician["id"], TherapyIntakeSlots>;
-
-const MAX_FOLLOWUP_DAYS = 7;
-const MIN_FOLLOWUP_DAYS = 1;
 
 export default class SchedulerService {
   constructor(private clinicians: Clinician[]) {}
@@ -73,11 +76,8 @@ export default class SchedulerService {
 
   private getAssessmentFollowUps(
     availableSlots: AvailableAppointmentSlot[]
-  ): Record<AvailableAppointmentSlot["id"], AvailableAppointmentSlot[]> {
-    const slotFollowups: Record<
-      AvailableAppointmentSlot["id"],
-      AvailableAppointmentSlot[]
-    > = {};
+  ): SlotsById {
+    const slotFollowups: SlotsById = {};
     const cache = new Map<string, AvailableAppointmentSlot[]>();
 
     for (let i = 0; i < availableSlots.length; i++) {
