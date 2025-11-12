@@ -1,7 +1,7 @@
-import SchedulerService from "./schedulerService";
-import { Clinician, ClinicianType } from "./clinician";
-import { Patient } from "./patient";
-import { AvailableAppointmentSlot } from "./appointment";
+import SchedulerService from "../schedulerService";
+import { Clinician, ClinicianType } from "../clinician";
+import { Patient } from "../patient";
+import { AvailableAppointmentSlot } from "../appointment";
 import { addDays } from "date-fns";
 
 // This is AI generated, but I did read through them all, and it helped me catch a few bugs
